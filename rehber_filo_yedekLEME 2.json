@@ -1,0 +1,441 @@
+{
+  "vehicles": [
+    {
+      "plate": "34 ZPP 25",
+      "brand": "SSANGYOUNG",
+      "model": "ACTYON SPORT",
+      "km": 198000,
+      "insurance": "2026-07-03",
+      "inspection": "2026-06-24",
+      "status": "müsait",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34ZPP25.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\ZPP.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\ZPP.jpg"
+      }
+    },
+    {
+      "plate": "34 SY 2075",
+      "brand": "CITROEN",
+      "model": "C-ELYSSE",
+      "km": 196000,
+      "insurance": "2026-05-09",
+      "inspection": "2027-05-10",
+      "status": "müsait",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34SY2075.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\SY.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\SY.jpg"
+      }
+    },
+    {
+      "plate": "34 SG 1716",
+      "brand": "RENAULT",
+      "model": "SPORT TOURER",
+      "km": 223000,
+      "insurance": "2026-07-10",
+      "inspection": "2026-09-21",
+      "status": "müsait",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34SG1716.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\SG.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\SG.jpg"
+      }
+    },
+    {
+      "plate": "34 RY 8915",
+      "brand": "RENAULT",
+      "model": "SEYMBOL",
+      "km": 240000,
+      "insurance": "2025-10-25",
+      "inspection": "2027-06-14",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34RY8915.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\RY.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\RY.jpg"
+      }
+    },
+    {
+      "plate": "34 RL 5314",
+      "brand": "HYUDAI",
+      "model": "ACCEN BLUE",
+      "km": 265000,
+      "insurance": "2026-05-29",
+      "inspection": "2027-05-28",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34RL5314.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\RL.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\RL.jpg"
+      }
+    },
+    {
+      "plate": "34 KU 4226",
+      "brand": "WOLKWAGEN",
+      "model": "HETTA 2014",
+      "km": 230000,
+      "insurance": "2027-06-26",
+      "inspection": "2026-06-28",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34KU4226.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\KU.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\KU.jpg"
+      }
+    },
+    {
+      "plate": "34 KB 4376",
+      "brand": "WOLKWAGEN",
+      "model": "GOLF",
+      "km": 190000,
+      "insurance": "2026-01-08",
+      "inspection": "2026-12-16",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34KB4376.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\KB.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\KB.jpg"
+      }
+    },
+    {
+      "plate": "34 HNT 618",
+      "brand": "PEUGEOT",
+      "model": "BIPPER",
+      "km": 310000,
+      "insurance": "2026-01-18",
+      "inspection": "2026-02-03",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34HNT618.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\HNT.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\HNT.jpg"
+      }
+    },
+    {
+      "plate": "34 HN 7532",
+      "brand": "FIAT",
+      "model": "EGEA",
+      "km": 220000,
+      "insurance": "2026-03-14",
+      "inspection": "2027-07-28",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34HN7532.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\HN.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\HN.jpg"
+      }
+    },
+    {
+      "plate": "34 GV 900",
+      "brand": "RENAULT",
+      "model": "CLIO",
+      "km": 136000,
+      "insurance": "2026-04-14",
+      "inspection": "2027-04-16",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34GV900.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\GV.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\GV.jpg"
+      }
+    },
+    {
+      "plate": "34 FTB 448",
+      "brand": "RENAULT",
+      "model": "CLIO",
+      "km": 140000,
+      "insurance": "2025-12-21",
+      "inspection": "2026-05-07",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34FTB448.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\FTB.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\FTB.jpg"
+      }
+    },
+    {
+      "plate": "34 FPY 367",
+      "brand": "PEUGEOT",
+      "model": "301",
+      "km": 156000,
+      "insurance": "2025-09-29",
+      "inspection": "2026-11-02",
+      "status": "müsait",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34FPY367.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\FPY.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\FPY.jpg"
+      }
+    },
+    {
+      "plate": "34 FHN 945",
+      "brand": "RENAULT",
+      "model": "CLIO",
+      "km": 185000,
+      "insurance": "2026-06-29",
+      "inspection": "2025-09-22",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34FHN945.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\FHN.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\FHN.jpg"
+      }
+    },
+    {
+      "plate": "34 EON 804",
+      "brand": "PEUGEOT",
+      "model": "2013",
+      "km": 160000,
+      "insurance": "2025-11-01",
+      "inspection": "2025-11-03",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34EON804.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\EON.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\EON.jpg"
+      }
+    },
+    {
+      "plate": "34 DGD 289",
+      "brand": "FIAT",
+      "model": "EGEA",
+      "km": 210000,
+      "insurance": "2025-10-01",
+      "inspection": "2025-09-21",
+      "status": "kirada",
+      "gorseller": {
+        "sigorta": "D:\\samet\\OneDrive\\Desktop\\REHBER SIGORTALARI\\34DGD289.pdf",
+        "muayene": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC MUAYENELERI\\DGD.jpg",
+        "ruhsat": "D:\\samet\\OneDrive\\Desktop\\REHBER ARAC RUHSATLARI\\DGD.jpg"
+      }
+    },
+    {
+      "plate": "34 MLA 153",
+      "brand": "",
+      "model": "",
+      "km": 169000,
+      "insurance": "",
+      "inspection": "",
+      "status": "kirada",
+      "gorseller": null
+    },
+    {
+      "plate": "34 KBL 633",
+      "brand": "",
+      "model": "",
+      "km": 201500,
+      "insurance": "",
+      "inspection": "",
+      "status": "müsait",
+      "gorseller": null
+    }
+  ],
+  "rentals": [
+    {
+      "id": "160ce275-8957-4f95-adcd-8580910b86e8",
+      "plate": "34 EON 804",
+      "customer": "EMRAH DEMIR",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 207000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "52ecfc32-a95c-4f13-a165-ec6fd49b1993",
+      "plate": "34 HNT 618",
+      "customer": "ILHAN USTA",
+      "per": "Günlük",
+      "rate": 1,
+      "startDate": "2025-08-30",
+      "startKm": 310000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "0bd4b98d-dcaf-4181-b492-ead3bcf0267b",
+      "plate": "34 FHN 945",
+      "customer": "IZMIR MURAT",
+      "per": "Aylık",
+      "rate": 35000,
+      "startDate": "2025-08-30",
+      "startKm": 185000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "c7ff77d0-545e-4662-b407-d5a5ab3d71b5",
+      "plate": "34 RL 5314",
+      "customer": "BONOMO ARKADAS",
+      "per": "Aylık",
+      "rate": 35000,
+      "startDate": "2025-08-30",
+      "startKm": 265000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "e73a1f56-c232-44d0-b7c4-0b0cad0fdb92",
+      "plate": "34 KU 4226",
+      "customer": "BREMAR CETIN",
+      "per": "Aylık",
+      "rate": 2025,
+      "startDate": "2025-08-30",
+      "startKm": 230000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "4ce0da89-caf1-40c1-a6ff-c144f8e95d4a",
+      "plate": "34 FTB 448",
+      "customer": "KAYTAN GUVENLIK",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 140000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "c7c401cf-a8a4-4c32-8ca4-a42eef411e90",
+      "plate": "34 GV 900",
+      "customer": "KAYTAN GUVENLIK",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 136000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "2d287d4c-91c6-4889-a70b-6349ad2f7506",
+      "plate": "34 MLA 153",
+      "customer": "KAYTAN GUVENLIK",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 169000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "26f5846e-43e7-45c7-af76-21e9c5220ec2",
+      "plate": "34 KB 4376",
+      "customer": "VOICEVALE",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 190000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "1eebc7fe-ec9e-4b68-a826-3e7ac0e76cfa",
+      "plate": "34 HN 7532",
+      "customer": "MAY ELEKTRONIK",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 220000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "e8065a04-36ef-46d3-8634-64fd746b17b4",
+      "plate": "34 DGD 289",
+      "customer": "ELGIZ MAKINE",
+      "per": "Aylık",
+      "rate": 27000,
+      "startDate": "2025-08-30",
+      "startKm": 210000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    },
+    {
+      "id": "aaabc6dc-8726-4e4c-8d9f-713b6408761f",
+      "plate": "34 RY 8915",
+      "customer": "KAZIM CAKIR",
+      "per": "Aylık",
+      "rate": 25000,
+      "startDate": "2025-08-30",
+      "startKm": 240000,
+      "endDate": "",
+      "endKm": "",
+      "invoice": null,
+      "contract": null
+    }
+  ],
+  "reservations": [],
+  "maintenance": [
+    {
+      "id": "e1b8525b-1790-4a8c-987d-fc86a570c5b3",
+      "plate": "34 EON 804",
+      "date": "2025-08-18",
+      "km": 207000,
+      "note": "PERIYODIK BAKIMİ YAG KACAKLARI",
+      "type": "Bakım"
+    },
+    {
+      "id": "c8558ad7-697e-4548-9e43-1a8845608346",
+      "plate": "34 FNL 637",
+      "date": "2025-08-11",
+      "km": 185000,
+      "note": "SANJIMAN RULMAN SETI,DEBRIYAJ SETI,FREN HIDROLIK,",
+      "type": "Bakım"
+    },
+    {
+      "id": "1f2d6bb2-cc81-4187-9427-b4400c8ee8e8",
+      "plate": "34 SY 2075",
+      "date": "2025-08-25",
+      "km": 229000,
+      "note": "DEBRIYAJ DEGISIMI,SANJIMAN YAGI,ON FREN BALATA,SOOL ON AMARTISOR UST TAKOZ,SOL ON ASKI ROTU,ALT SANZIMAN KULAGI,SAG AKS KECESI,YAG BAKIM SETIİ ,TERMOSTAT TAKIMI",
+      "type": "Bakım"
+    },
+    {
+      "id": "a4f17804-86b5-42ef-93c3-8470567eb90b",
+      "plate": "34 KBL 633",
+      "date": "2025-08-30",
+      "km": 201500,
+      "note": "PERIYODIK BAKIM",
+      "type": "Bakım"
+    },
+    {
+      "id": "b1a55aa0-7d0d-4cb7-ada9-a6a05bbd9dcf",
+      "plate": "34 EON 804",
+      "date": "2025-08-25",
+      "km": 0,
+      "note": "PERIYODUK BAKIM SANSUMAN YAGIİ KARTELİ AKS KECESI",
+      "type": "Bakım"
+    }
+  ],
+  "settings": {
+    "companyName": "Rehber Otomobilcilik Ve Taşımacılık Ticaret Limited Şirketi",
+    "currency": "TRY",
+    "vat": 20,
+    "iban": "IBAN: TR82 0011 1000 0000 0083 9256 63 Banka adı: QNB Finansbank"
+  }
+}

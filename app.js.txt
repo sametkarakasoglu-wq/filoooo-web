@@ -1,0 +1,917 @@
+// src/App.js
+import React, { useEffect, useMemo, useState } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+
+/* ============ LocalStorage Hook ============ */
+function useLS(key, initial) {
+  const [state, setState] = useState(() => {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : initial; }
+    catch { return initial; }
+  });
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(state)); } catch {} }, [key, state]);
+  return [state, setState];
+}
+
+/* ============ Tema Seti ============ */
+const BASE = {
+  light:  { bg:"#f7f8fb", card:"#ffffff", line:"#e5e7eb", text:"#111827", muted:"#6b7280", primary:"#2563eb" , ok:"#16a34a", warn:"#f59e0b", danger:"#ef4444" },
+  slate:  { bg:"#0f172a", card:"#111827", line:"#1f2937", text:"#e5e7eb", muted:"#9ca3af", primary:"#7c3aed" , ok:"#22c55e", warn:"#f59e0b", danger:"#ef4444" },
+  dark:   { bg:"#0b0f17", card:"#0f1524", line:"#172033", text:"#dbe4ff", muted:"#8da2c0", primary:"#6366f1" , ok:"#22c55e", warn:"#f59e0b", danger:"#ef4444" },
+  vibrant:{ bg:"#0a0b12", card:"#17182f", line:"#272a53", text:"#eaeaff", muted:"#a8b0ff", primary:"#8b5cf6" , ok:"#22d3ee", warn:"#fbbf24", danger:"#fb7185" },
+};
+const GLASS_ACCENTS = {
+  blue:   { primary:"#60a5fa", tint:"rgba(96,165,250,.18)" },
+  green:  { primary:"#34d399", tint:"rgba(52,211,153,.18)" },
+  teal:   { primary:"#2dd4bf", tint:"rgba(45,212,191,.18)" },
+  purple: { primary:"#a78bfa", tint:"rgba(167,139,250,.18)" },
+  rose:   { primary:"#f472b6", tint:"rgba(244,114,182,.18)" },
+  amber:  { primary:"#fbbf24", tint:"rgba(251,191,36,.18)" },
+  slate:  { primary:"#94a3b8", tint:"rgba(148,163,184,.18)" },
+};
+function glassTheme(accent="blue"){
+  const a = GLASS_ACCENTS[accent] || GLASS_ACCENTS.blue;
+  return {
+    bg:"#0b1220",
+    card:"rgba(255,255,255,.06)",
+    line:"rgba(255,255,255,.12)",
+    text:"#e5e7eb",
+    muted:"#9ca3af",
+    primary:a.primary,
+    ok:"#22c55e",
+    warn:"#f59e0b",
+    danger:"#ef4444",
+    glassTint:a.tint,
+  };
+}
+
+/* ============ Yardımcılar ============ */
+const CURRENCY = "TRY";
+const todayISO = () => new Date().toISOString().slice(0,10);
+const fmtTR = (iso) => {
+  if (!iso) return "-";
+  const d = new Date(iso); // DD.MM.YY
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${dd}.${mm}.${yy}`;
+};
+const daysLeft = (iso) => (iso ? Math.ceil((new Date(iso)-new Date())/86400000) : 9e9);
+const toDataURL = (file) => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+async function extractDateFromPDF(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = "";
+    for (let i=1;i<=Math.min(pdf.numPages,2);i++){
+      const page = await pdf.getPage(i);
+      const t = await page.getTextContent();
+      text += t.items.map(it=>it.str).join(" ") + " ";
+    }
+    const s = text.toLowerCase();
+    const re = /(\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4}|\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2})/g;
+    let best=null, m;
+    while((m=re.exec(s))){
+      const win = s.slice(Math.max(0, m.index-60), m.index+60);
+      let score=0;
+      if(/sigorta|poliçe|kasko|trafik/.test(win)) score+=3;
+      if(/muayene|tüv|tuv|egzoz/.test(win)) score+=2;
+      if(/ruhsat/.test(win)) score+=1;
+      if(!best || score>(best.score||0)) best={ raw:m[0], score };
+    }
+    if(!best) return "";
+    const raw = best.raw.replace(/-/g,".");
+    const p = raw.split(/[./]/);
+    if(p.length===3){
+      let[a,b,c]=p;
+      if(a.length===4) return `${a}-${b.padStart(2,"0")}-${c.padStart(2,"0")}`;
+      if(c.length===2) c="20"+c;
+      return `${c}-${b.padStart(2,"0")}-${a.padStart(2,"0")}`;
+    }
+  }catch{}
+  return "";
+}
+
+/* ============ App ============ */
+export default function App(){
+  /* Ayarlar & Tema */
+  const [settings, setSettings] = useLS("rehber-settings-v1", {
+    companyName:"REHBER OTOMOTİV – Filo",
+    iban:"",
+    logo:"",
+    theme:"slate",              // light | slate | dark | vibrant | glass-*
+    glassAccent:"blue",         // blue|green|teal|purple|rose|amber|slate
+  });
+  const THEME = settings.theme.startsWith("glass")
+    ? glassTheme(settings.glassAccent)
+    : (BASE[settings.theme] || BASE.slate);
+
+  /* Veriler */
+  const [vehicles, setVehicles] = useLS("rehber-vehicles-v1", []);
+  const [rentals, setRentals]   = useLS("rehber-rentals-v1", []);
+  const [reservations, setReservations] = useLS("rehber-reservations-v1", []);
+  const [maintenance, setMaintenance]   = useLS("rehber-maintenance-v1", []);
+
+  /* UI */
+  const [tab, setTab] = useState("araclar");
+  const [q, setQ] = useState("");
+
+  /* --- Stil enjekte --- */
+  useEffect(()=>{
+    const css = `
+      :root{--bg:${THEME.bg};--card:${THEME.card};--line:${THEME.line};--text:${THEME.text};--muted:${THEME.muted};--primary:${THEME.primary};--ok:${THEME.ok};--warn:${THEME.warn};--danger:${THEME.danger};--glass:${THEME.glassTint||"transparent"}}
+      *{box-sizing:border-box}
+      body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,Roboto}
+      .wrap{max-width:1200px;margin:20px auto;padding:0 16px}
+      .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+      .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;${settings.theme.startsWith("glass") ? "backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);border-color:rgba(255,255,255,.14);" : ""}}
+      .btn{background:transparent;border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:10px;cursor:pointer}
+      .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+      .btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+      .btn.warn{background:var(--warn);border-color:var(--warn);color:#111}
+      .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+      input,select{background:transparent;border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:8px}
+      table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}
+      th,td{padding:8px;border:1px solid var(--line);background:var(--card)}
+      th{color:var(--muted);font-size:12px}
+      td{border-radius:10px}
+      td:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+      td:last-child{border-top-left-radius:0;border-bottom-left-radius:0}
+      .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .mini .btn{padding:4px 8px}
+      .icon{opacity:.9;font-size:12px}
+      .dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+      .legend .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:4px 8px}
+      .grid-7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+      .cell{min-height:84px;border:1px solid var(--line);border-radius:10px;padding:6px;background:var(--card);position:relative}
+      .evt{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+      .evt .dot{flex:0 0 8px}
+      .tooltip{position:absolute;inset:auto auto 6px 6px;background:var(--card);border:1px solid var(--line);padding:6px 8px;border-radius:8px;font-size:12px;display:none}
+      .cell:hover .tooltip{display:block}
+      .glassbar{background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+      .tight th,.tight td{padding:6px}
+    `;
+    let el = document.getElementById("__style");
+    if (el) el.remove();
+    el = document.createElement("style");
+    el.id = "__style"; el.innerHTML = css; document.head.appendChild(el);
+  }, [settings.theme, settings.glassAccent]);
+
+  /* İstatistikler (KPI – Hatırlatmalar sekmesinde gösterilecek) */
+  const stats = useMemo(()=>{
+    const total = vehicles.length;
+    const rented = vehicles.filter(v=>v.status==="kirada").length;
+    const free = total - rented;
+    const openContracts = rentals.filter(r=>!r.endDate).length;
+    return { total, rented, free, openContracts };
+  }, [vehicles, rentals]);
+
+  /* ================= Araç Ekle / Düzenle / Belgeler ================= */
+  const [newVeh, setNewVeh] = useState({
+    plate:"", brand:"", model:"", km:0,
+    insurance:"", inspection:"",
+    status:"müsait",
+    files:{} // {insuranceFile,inspectionFile,regFile}
+  });
+
+  async function attachNewFile(key, file){
+    const dataURL = await toDataURL(file);
+    let extra = {};
+    if (file.type.includes("pdf") && (key==="insuranceFile" || key==="inspectionFile")) {
+      const auto = await extractDateFromPDF(file);
+      if (key==="insuranceFile" && auto && !newVeh.insurance) extra.insurance = auto;
+      if (key==="inspectionFile" && auto && !newVeh.inspection) extra.inspection = auto;
+    }
+    setNewVeh(v => ({ ...v, files:{...(v.files||{}), [key]:dataURL}, ...extra }));
+  }
+
+  const addVehicle = () => {
+    if (!newVeh.plate.trim()) return alert("Plaka gerekli");
+    if (vehicles.some(v=>v.plate.toLowerCase()===newVeh.plate.toLowerCase()))
+      return alert("Bu plaka zaten var");
+    setVehicles(a=>[{...newVeh, km:Number(newVeh.km||0)}, ...a]);
+    setNewVeh({ plate:"", brand:"", model:"", km:0, insurance:"", inspection:"", status:"müsait", files:{} });
+  };
+  const editVehicle = (plate) => {
+    const v = vehicles.find(x=>x.plate===plate); if(!v) return;
+    const brand = prompt("Marka", v.brand ?? "") ?? v.brand;
+    const model = prompt("Model", v.model ?? "") ?? v.model;
+    const km = Number(prompt("KM", v.km ?? 0) ?? v.km);
+    setVehicles(a=>a.map(x=> x.plate===plate ? {...x, brand, model, km} : x));
+  };
+  const removeVehicle = (plate) => {
+    if (!window.confirm("Aracı silinsin mi?")) return;
+    setVehicles(a=>a.filter(v=>v.plate!==plate));
+    setRentals(a=>a.filter(r=>r.plate!==plate));
+    setReservations(a=>a.filter(z=>z.plate!==plate));
+    setMaintenance(a=>a.filter(m=>m.plate!==plate));
+  };
+
+  const attachDoc = async (plate, key, file) => {
+    const dataURL = await toDataURL(file);
+    let autoDate = "";
+    if (file.type.includes("pdf") && (key==="insuranceFile"||key==="inspectionFile")) {
+      autoDate = await extractDateFromPDF(file);
+    }
+    setVehicles(a=>a.map(v=>{
+      if (v.plate!==plate) return v;
+      const next = { ...v, files:{...(v.files||{}), [key]:dataURL} };
+      if (key==="insuranceFile" && autoDate && !next.insurance) next.insurance = autoDate;
+      if (key==="inspectionFile" && autoDate && !next.inspection) next.inspection = autoDate;
+      return next;
+    }));
+  };
+  const clearDoc = (plate, key) => setVehicles(a=>a.map(v=> v.plate===plate ? {...v, files:{...(v.files||{}), [key]:undefined}} : v));
+  const previewDoc = (dataURL) => {
+    if (!dataURL) return;
+    const w = window.open("", "_blank");
+    w.document.write(
+      dataURL.startsWith("data:image")
+        ? `<img src="${dataURL}" style="max-width:100%"/>`
+        : `<iframe src="${dataURL}" style="width:100%;height:100vh;border:0"></iframe>`
+    );
+    w.document.close();
+  };
+
+  /* ================= Kiralama / Teslim ================= */
+  const [expandedPlate, setExpandedPlate] = useState(null);    // Hangi satır açık (kiraya ver / teslim al formları için)
+  const [rentDraft, setRentDraft] = useState(null);             // {plate, customer, per, rate, startDate, startKm}
+  const [returnDraft, setReturnDraft] = useState(null);         // {rentalId, endDate, endKm}
+
+  const openRent = (v) => {
+    if (v.status==="kirada") return alert("Araç zaten kirada");
+    setExpandedPlate(v.plate);
+    setReturnDraft(null);
+    setRentDraft({ plate:v.plate, customer:"", per:"Günlük", rate:"", startDate:todayISO(), startKm:v.km||0 });
+  };
+  const startRent = (e) => {
+    e.preventDefault();
+    const d = rentDraft; if(!d) return;
+    if(!d.customer) return alert("Müşteri gerekli");
+    const rec = {
+      id: crypto.randomUUID(),
+      plate: d.plate,
+      customer: d.customer,
+      per: d.per, rate: Number(d.rate||0),
+      startDate: d.startDate, startKm: Number(d.startKm||0),
+      endDate:"", endKm:"",
+      invoice:null, contract:null
+    };
+    setRentals(a=>[rec, ...a]);
+    setVehicles(a=>a.map(v=>v.plate===d.plate ? {...v, status:"kirada"} : v));
+    setRentDraft(null); setExpandedPlate(null);
+  };
+
+  const openReturn = (v) => {
+    const r = rentals.find(x=>x.plate===v.plate && !x.endDate);
+    if (!r) return alert("Açık sözleşme yok");
+    setExpandedPlate(v.plate);
+    setRentDraft(null);
+    setReturnDraft({ rentalId:r.id, endDate:todayISO(), endKm:v.km||r.startKm||0 });
+  };
+  const finishReturn = (e) => {
+    e.preventDefault();
+    const d = returnDraft; if(!d) return;
+    setRentals(a=>a.map(r=>r.id===d.rentalId ? {...r, endDate:d.endDate, endKm:Number(d.endKm||0)} : r));
+    const old = rentals.find(x=>x.id===d.rentalId);
+    if (old) {
+      setVehicles(a=>a.map(v=> v.plate===old.plate ? {...v, status:"müsait", km:Number(d.endKm||v.km)} : v));
+    }
+    setReturnDraft(null); setExpandedPlate(null);
+  };
+
+  /* Fatura / Sözleşme (kiralamalar) */
+  const addInvoice  = async (id, file) => { const url = await toDataURL(file); setRentals(a=>a.map(r=>r.id===id?{...r,invoice:url}:r)); };
+  const addContract = async (id, file) => { const url = await toDataURL(file); setRentals(a=>a.map(r=>r.id===id?{...r,contract:url}:r)); };
+  const clearRentalFile = (id, key) => setRentals(a=>a.map(r=>r.id===id?{...r,[key]:null}:r));
+  const editRental = (id, patch) => setRentals(a=>a.map(r=>r.id===id?{...r,...patch}:r));
+  const removeRental = (id) => { if(!window.confirm("Kiralama silinsin mi?")) return; setRentals(a=>a.filter(r=>r.id!==id)); };
+
+  /* ================= Rezervasyonlar ================= */
+  const [resDraft, setResDraft] = useState(null); // {id?, plate, customer, from, to, place}
+  const openResNew = () => setResDraft({ plate:"", customer:"", from:todayISO(), to:todayISO(), place:"" });
+  const saveRes = (e) => {
+    e.preventDefault();
+    const d = resDraft; if(!d.plate||!d.customer||!d.from||!d.to) return alert("Eksik bilgi");
+    if (d.id) setReservations(a=>a.map(x=>x.id===d.id?d:x));
+    else setReservations(a=>[{ id:crypto.randomUUID(), ...d }, ...a]);
+    setResDraft(null);
+  };
+  const editRes = (z) => setResDraft({ ...z });
+  const removeRes = (id) => { if(!window.confirm("Rezervasyon silinsin mi?")) return; setReservations(a=>a.filter(x=>x.id!==id)); };
+
+  /* ================= Bakım ================= */
+  const [maintDraft, setMaintDraft] = useState({ plate:"", date:todayISO(), km:"", note:"", type:"Bakım" });
+  const addMaint = (e) => {
+    e.preventDefault();
+    const d=maintDraft; if(!d.plate) return alert("Plaka gerekli");
+    setMaintenance(a=>[{ id:crypto.randomUUID(), ...d, km:Number(d.km||0) }, ...a]);
+    setMaintDraft({ plate:"", date:todayISO(), km:"", note:"", type:"Bakım" });
+  };
+  const removeMaint = (id) => setMaintenance(a=>a.filter(m=>m.id!==id));
+
+  /* ================= Hatırlatmalar ================= */
+  const reminders = useMemo(()=>{
+    const list=[];
+    vehicles.forEach(v=>{
+      if (v.insurance && daysLeft(v.insurance) <= 30) list.push({ type:"Sigorta", plate:v.plate, date:v.insurance });
+      if (v.inspection && daysLeft(v.inspection) <= 30) list.push({ type:"Muayene", plate:v.plate, date:v.inspection });
+    });
+    // bakım (zaman) için basit uyarı – son kayda +12 ay düşün (yakında istenirse 15k km de eklenir)
+    maintenance.forEach(m=>{
+      const next = new Date(m.date); next.setMonth(next.getMonth()+12);
+      const iso = next.toISOString().slice(0,10);
+      if (daysLeft(iso) <= 30) list.push({ type:"Bakım", plate:m.plate, date:iso });
+    });
+    return list.sort((a,b)=>a.date.localeCompare(b.date));
+  }, [vehicles, maintenance]);
+
+  /* ================= Takvim =================
+     İstek: takvimde SADECE Rezervasyon / Bakım / Sigorta / Muayene
+     Renkler: 🟦 Rezervasyon, 🟧 Bakım, 🟨 Sigorta, 🟥 Muayene
+     Hover’da küçük bilgi baloncuğu (tooltip)
+  =========================================== */
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const first = new Date(calYear, calMonth, 1);
+  const startDow = (first.getDay()+6)%7; // Pzt=0
+  const calDays = [...Array(42)].map((_,i)=> new Date(calYear, calMonth, 1-startDow+i));
+  const dateISO = (d)=> d.toISOString().slice(0,10);
+
+  const DAY_COLORS = { res:"#3b82f6", maint:"#f59e0b", ins:"#fbbf24", insp:"#ef4444" }; // 🟦 🟧 🟨 🟥
+  function dayEvents(iso){
+    const arr=[];
+    reservations.forEach(z=>{ if(z.from<=iso && iso<=z.to) arr.push({type:"res", plate:z.plate, label:`Rezervasyon – ${z.plate}`}); });
+    maintenance.forEach(m=>{ if(m.date===iso) arr.push({type:"maint", plate:m.plate, label:`Bakım – ${m.plate}`}); });
+    vehicles.forEach(v=>{
+      if (v.insurance===iso) arr.push({type:"ins", plate:v.plate, label:`Sigorta – ${v.plate}`});
+      if (v.inspection===iso) arr.push({type:"insp", plate:v.plate, label:`Muayene – ${v.plate}`});
+    });
+    return arr;
+  }
+  const shiftMonth = (d)=>{ let y=calYear, m=calMonth+d; if(m<0){m=11;y--} if(m>11){m=0;y++} setCalYear(y); setCalMonth(m); };
+
+  /* ================= Arama / Filtreler ================= */
+  const filteredVehicles = vehicles.filter(v=>{
+    const s=q.toLowerCase();
+    return v.plate.toLowerCase().includes(s) || (v.brand||"").toLowerCase().includes(s) || (v.model||"").toLowerCase().includes(s);
+  });
+
+  // Kiralamalar: arama + tarih filtresi
+  const [rentalQ, setRentalQ] = useState("");
+  const [rFrom, setRFrom] = useState("");
+  const [rTo, setRTo] = useState("");
+  const vehicleMap = useMemo(()=> new Map(vehicles.map(v=>[v.plate,v])), [vehicles]);
+  const filteredRentals = rentals.filter(r=>{
+    const s = rentalQ.toLowerCase();
+    const veh = vehicleMap.get(r.plate);
+    const matchText =
+      r.plate.toLowerCase().includes(s) ||
+      (veh?.brand||"").toLowerCase().includes(s) ||
+      (veh?.model||"").toLowerCase().includes(s) ||
+      (r.customer||"").toLowerCase().includes(s);
+    const start = r.startDate || "0000-01-01";
+    const end   = r.endDate   || "9999-12-31";
+    const within =
+      (!rFrom || end >= rFrom) &&
+      (!rTo   || start <= rTo);
+    return matchText && within;
+  });
+
+  /* ================= Export / Import / Özet PDF ================= */
+  const exportJSON = () => {
+    const json = JSON.stringify({ version:"1.0.0", exportedAt:new Date().toISOString(), vehicles, rentals, reservations, maintenance, settings }, null, 2);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([json],{type:"application/json"}));
+    a.download = "rehber_filo_yedek.json"; a.click();
+  };
+  const importJSON = (file) => {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const obj = JSON.parse(r.result);
+        setVehicles(obj.vehicles||[]);
+        setRentals(obj.rentals||[]);
+        setReservations(obj.reservations||[]);
+        setMaintenance(obj.maintenance||[]);
+        setSettings(s=>({ ...s, ...(obj.settings||{}) }));
+        alert("Yedek yüklendi.");
+      } catch { alert("Geçersiz JSON"); }
+    };
+    r.readAsText(file);
+  };
+
+  // Sadece TAMAMLANMIŞ kiralamalar özeti (isteğin doğrultusunda)
+  const printCompletedRentals = () => {
+    const done = rentals.filter(r=>r.endDate);
+    const style=`
+      body{font:14px system-ui;margin:24px;color:#0f172a}
+      h1,h2{margin:0 0 8px}
+      .brand{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+      .logo{width:44px;height:44px;border-radius:8px;background:#6366f1;object-fit:cover}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #e5e7eb;padding:8px}
+      th{background:#f1f5f9}
+      tr:nth-child(even) td{background:#fafafa}
+      .muted{color:#64748b}
+      .foot{margin-top:24px;display:flex;justify-content:space-between;color:#64748b}
+    `;
+    const rows = (done.length?done:[{plate:"—",customer:"—"}]).map(r=>{
+      const v = vehicleMap.get(r.plate) || {};
+      const kmDiff = (r.endKm && r.startKm) ? (r.endKm - r.startKm) : "-";
+      return `<tr>
+        <td>${r.plate}</td>
+        <td>${(v.brand||"-")+" "+(v.model||"")}</td>
+        <td>${r.customer||"-"}</td>
+        <td>${r.startDate||"-"}</td>
+        <td>${r.endDate||"-"}</td>
+        <td>${r.startKm??"-"}</td>
+        <td>${r.endKm??"-"}</td>
+        <td>${kmDiff}</td>
+        <td>${r.per}</td>
+        <td>${Number(r.rate||0).toLocaleString("tr-TR",{style:"currency",currency:CURRENCY,maximumFractionDigits:0})}</td>
+        <td>${r.invoice?"✅":"❌"}</td>
+        <td>${r.contract?"✅":"❌"}</td>
+      </tr>`;
+    }).join("");
+    const w = window.open("", "_blank", "width=1200,height=800");
+    w.document.write(`
+      <html><head><meta charset="utf-8"><title>Tamamlanmış Kiralamalar Özeti</title><style>${style}</style></head><body>
+        <div class="brand">
+          ${settings.logo ? `<img class="logo" src="${settings.logo}"/>` : `<div class="logo"></div>`}
+          <div>
+            <h1>${settings.companyName||"REHBER OTOMOTİV – Filo"}</h1>
+            <div class="muted">IBAN: ${settings.iban||"—"}</div>
+          </div>
+        </div>
+        <h2>Tamamlanmış Kiralamalar</h2>
+        <table>
+          <thead><tr>
+            <th>Plaka</th><th>Marka/Model</th><th>Müşteri</th>
+            <th>Başlangıç</th><th>Bitiş</th>
+            <th>Çıkış KM</th><th>Dönüş KM</th><th>KM Fark</th>
+            <th>Periyot</th><th>Ücret</th><th>Fatura</th><th>Sözleşme</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="foot">
+          <div>Oluşturma: ${new Date().toLocaleString("tr-TR")}</div>
+          <div>İmza: _____________________</div>
+        </div>
+        <script>window.print()</script>
+      </body></html>
+    `);
+    w.document.close();
+  };
+
+  /* =================== RENDER =================== */
+  return (
+    <div className="wrap">
+      {/* Üst Bar */}
+      <div className="row" style={{ marginBottom: 12 }}>
+        {settings.logo ? (
+          <img src={settings.logo} alt="logo" style={{ height: 44, borderRadius: 8 }} />
+        ) : (
+          <div style={{ width: 44, height: 44, borderRadius: 8, background: THEME.primary }} />
+        )}
+        <div className="glassbar" style={{ fontWeight: 800 }}>
+          {settings.companyName || "REHBER OTOMOTİV – Filo"}
+        </div>
+        <div className="row" style={{ marginLeft: "auto" }}>
+          {[
+            ["araclar","🚗 Araçlar"],
+            ["kiralamalar","📑 Kiralamalar"],
+            ["rezervasyonlar","🗓️ Rezervasyonlar"],
+            ["bakim","🛠️ Bakım"],
+            ["takvim","📊 Takvim"],
+            ["hatirlatmalar","⏰ Hatırlatmalar"],
+            ["ayarlar","⚙️ Ayarlar"],
+          ].map(([k, label]) => (
+            <button key={k} className={"btn"+(tab===k?" primary":"")} onClick={()=>setTab(k)}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Üst Araç Çubuğu – Arama + Yedek + Özet (Toplu Belge tuşu kaldırıldı) */}
+      <div className="row" style={{ marginBottom: 12 }}>
+        <input className="nowrap" placeholder="Plaka / Marka / Model ara…" value={q} onChange={(e)=>setQ(e.target.value)} style={{ minWidth: 260 }} />
+        <div style={{ flex: 1 }} />
+        <button className="btn" onClick={printCompletedRentals}>🖨️ Tamamlanmış Kiralamalar Özeti PDF</button>
+        <button className="btn" onClick={exportJSON}>⬇️ Dışa Aktar</button>
+        <label className="btn">⬆️ Yedek Yükle
+          <input type="file" accept="application/json" style={{ display:"none" }} onChange={(e)=>e.target.files[0] && importJSON(e.target.files[0])}/>
+        </label>
+      </div>
+
+      {/* ===== Araçlar ===== */}
+      {tab==="araclar" && (
+        <div className="card">
+          {/* Ekleme Formu – dokümanları ekleyerek başla */}
+          <div className="row tight" style={{ marginBottom: 10 }}>
+            <input placeholder="Plaka" value={newVeh.plate} onChange={e=>setNewVeh({...newVeh, plate:e.target.value.toUpperCase()})}/>
+            <input placeholder="Marka" value={newVeh.brand} onChange={e=>setNewVeh({...newVeh, brand:e.target.value})}/>
+            <input placeholder="Model" value={newVeh.model} onChange={e=>setNewVeh({...newVeh, model:e.target.value})}/>
+            <input type="number" placeholder="KM" value={newVeh.km} onChange={e=>setNewVeh({...newVeh, km:e.target.value})}/>
+            <label className="nowrap">Sigorta <input type="date" value={newVeh.insurance} onChange={e=>setNewVeh({...newVeh, insurance:e.target.value})}/></label>
+            <label className="nowrap">Muayene <input type="date" value={newVeh.inspection} onChange={e=>setNewVeh({...newVeh, inspection:e.target.value})}/></label>
+
+            {/* İlk eklemede PDF/JPG/PNG al */}
+            <label className="btn">Sigorta PDF/JPG
+              <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                     onChange={(e)=>e.target.files[0] && attachNewFile("insuranceFile", e.target.files[0])}/>
+            </label>
+            <label className="btn">Muayene PDF/JPG
+              <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                     onChange={(e)=>e.target.files[0] && attachNewFile("inspectionFile", e.target.files[0])}/>
+            </label>
+            <label className="btn">Ruhsat PDF/JPG
+              <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                     onChange={(e)=>e.target.files[0] && attachNewFile("regFile", e.target.files[0])}/>
+            </label>
+
+            <button className="btn ok" onClick={addVehicle}>➕ Aracı Ekle</button>
+          </div>
+
+          {/* Liste */}
+          <table className="tight">
+            <thead>
+              <tr>
+                <th className="nowrap">Durum</th>
+                <th className="nowrap">Plaka</th>
+                <th className="nowrap">Marka/Model</th>
+                <th className="nowrap">KM</th>
+                <th className="nowrap">Sigorta</th>
+                <th className="nowrap">Muayene</th>
+                <th className="nowrap">Ruhsat</th>
+                <th className="nowrap">İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredVehicles.length===0 ? (
+                <tr><td colSpan={8} className="nowrap" style={{ textAlign:"center", color:THEME.muted }}>Araç yok.</td></tr>
+              ) : filteredVehicles.map(v=>{
+                const soonIns = v.insurance && daysLeft(v.insurance)<=30;
+                const soonInsp = v.inspection && daysLeft(v.inspection)<=30;
+                return (
+                  <React.Fragment key={v.plate}>
+                    <tr className="mini">
+                      <td className="nowrap">{v.status==="kirada" ? <span className="dot" style={{ background:"#f59e0b" }}/> : <span className="dot" style={{ background:"#16a34a" }}/>}</td>
+                      <td className="nowrap">{v.plate}</td>
+                      <td className="nowrap">{(v.brand||"-")+" "+(v.model||"")}</td>
+                      <td className="nowrap">{v.km??"-"}</td>
+                      <td className="nowrap">
+                        <div className="row mini">
+                          <span title={v.insurance||"-"} style={{ background:soonIns?"#fde68a":"#e5e7eb", color:"#111", padding:"0 6px", borderRadius:6 }}>{fmtTR(v.insurance)}</span>
+                          <label className="btn">Ekle
+                            <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                                   onChange={(e)=>e.target.files[0] && attachDoc(v.plate, "insuranceFile", e.target.files[0])}/>
+                          </label>
+                          {v.files?.insuranceFile && <>
+                            <button className="btn" onClick={()=>previewDoc(v.files.insuranceFile)}>Gör</button>
+                            <button className="btn danger" onClick={()=>clearDoc(v.plate,"insuranceFile")}>Kaldır</button>
+                          </>}
+                        </div>
+                      </td>
+                      <td className="nowrap">
+                        <div className="row mini">
+                          <span title={v.inspection||"-"} style={{ background:soonInsp?"#fde68a":"#e5e7eb", color:"#111", padding:"0 6px", borderRadius:6 }}>{fmtTR(v.inspection)}</span>
+                          <label className="btn">Ekle
+                            <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                                   onChange={(e)=>e.target.files[0] && attachDoc(v.plate, "inspectionFile", e.target.files[0])}/>
+                          </label>
+                          {v.files?.inspectionFile && <>
+                            <button className="btn" onClick={()=>previewDoc(v.files.inspectionFile)}>Gör</button>
+                            <button className="btn danger" onClick={()=>clearDoc(v.plate,"inspectionFile")}>Kaldır</button>
+                          </>}
+                        </div>
+                      </td>
+                      <td className="nowrap">
+                        <div className="row mini">
+                          <label className="btn">Ekle
+                            <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                                   onChange={(e)=>e.target.files[0] && attachDoc(v.plate, "regFile", e.target.files[0])}/>
+                          </label>
+                          {v.files?.regFile ? <>
+                            <button className="btn" onClick={()=>previewDoc(v.files.regFile)}>Gör</button>
+                            <button className="btn danger" onClick={()=>clearDoc(v.plate,"regFile")}>Kaldır</button>
+                          </> : <span style={{ color:THEME.muted }}>—</span>}
+                        </div>
+                      </td>
+                      <td className="nowrap">
+                        <div className="row mini">
+                          {v.status==="müsait"
+                            ? <button className="btn ok" onClick={()=>openRent(v)}>Kiraya Ver</button>
+                            : <button className="btn warn" onClick={()=>openReturn(v)}>Teslim Al</button>}
+                          <button className="btn" onClick={()=>editVehicle(v.plate)}>Düzenle</button>
+                          <button className="btn danger" onClick={()=>removeVehicle(v.plate)}>Sil</button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Sadece bu aracın altına açılan form */}
+                    {expandedPlate===v.plate && rentDraft && rentDraft.plate===v.plate && (
+                      <tr><td colSpan={8}>
+                        <form onSubmit={startRent} className="card">
+                          <div style={{ fontWeight:700, marginBottom:8 }}>Kiraya Ver – {rentDraft.plate}</div>
+                          <div className="row">
+                            <input placeholder="Müşteri" value={rentDraft.customer} onChange={e=>setRentDraft({...rentDraft, customer:e.target.value})}/>
+                            <select value={rentDraft.per} onChange={e=>setRentDraft({...rentDraft, per:e.target.value})}>
+                              <option>Günlük</option><option>Aylık</option>
+                            </select>
+                            <input type="number" placeholder="Ücret" value={rentDraft.rate} onChange={e=>setRentDraft({...rentDraft, rate:e.target.value})}/>
+                            <input type="date" value={rentDraft.startDate} onChange={e=>setRentDraft({...rentDraft, startDate:e.target.value})}/>
+                            <input type="number" placeholder="KM Başlangıç" value={rentDraft.startKm} onChange={e=>setRentDraft({...rentDraft, startKm:e.target.value})}/>
+                            <button className="btn ok" type="submit">Başlat</button>
+                            <button className="btn" type="button" onClick={()=>{setRentDraft(null);setExpandedPlate(null);}}>İptal</button>
+                          </div>
+                        </form>
+                      </td></tr>
+                    )}
+                    {expandedPlate===v.plate && returnDraft && (
+                      <tr><td colSpan={8}>
+                        <form onSubmit={finishReturn} className="card">
+                          <div style={{ fontWeight:700, marginBottom:8 }}>Teslim Al – {v.plate}</div>
+                          <div className="row">
+                            <input type="date" value={returnDraft.endDate} onChange={e=>setReturnDraft({...returnDraft, endDate:e.target.value})}/>
+                            <input type="number" placeholder="KM Bitiş" value={returnDraft.endKm} onChange={e=>setReturnDraft({...returnDraft, endKm:e.target.value})}/>
+                            <button className="btn ok" type="submit">Tamamla</button>
+                            <button className="btn" type="button" onClick={()=>{setReturnDraft(null);setExpandedPlate(null);}}>İptal</button>
+                          </div>
+                        </form>
+                      </td></tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ===== Kiralamalar ===== */}
+      {tab==="kiralamalar" && (
+        <div className="card">
+          <div className="row" style={{ justifyContent:"space-between" }}>
+            <h3 style={{ margin:0 }}>Kiralama Kayıtları</h3>
+            <div className="row">
+              <input placeholder="Plaka/Marka/Model/Müşteri" value={rentalQ} onChange={e=>setRentalQ(e.target.value)} />
+              <label className="nowrap">Başlangıç ≤ <input type="date" value={rFrom} onChange={e=>setRFrom(e.target.value)} /></label>
+              <label className="nowrap">Bitiş ≥ <input type="date" value={rTo} onChange={e=>setRTo(e.target.value)} /></label>
+              <button className="btn" onClick={()=>{setRentalQ("");setRFrom("");setRTo("");}}>Temizle</button>
+            </div>
+          </div>
+
+          <table className="tight">
+            <thead>
+              <tr>
+                <th className="nowrap">Plaka</th>
+                <th className="nowrap">Müşteri</th>
+                <th className="nowrap">Başlangıç</th>
+                <th className="nowrap">Bitiş</th>
+                <th className="nowrap">Periyot</th>
+                <th className="nowrap">Ücret</th>
+                <th className="nowrap">KM Fark</th>
+                <th className="nowrap">Fatura</th>
+                <th className="nowrap">Sözleşme</th>
+                <th className="nowrap">İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRentals.length===0 ? (
+                <tr><td colSpan={10} style={{ textAlign:"center", color:THEME.muted }}>Kayıt yok.</td></tr>
+              ) : filteredRentals.map(r=>{
+                const kmDiff = (r.endKm && r.startKm) ? (r.endKm - r.startKm) : "-";
+                return (
+                  <tr key={r.id} className="mini">
+                    <td className="nowrap">{r.plate}</td>
+                    <td className="nowrap">{r.customer}</td>
+                    <td className="nowrap">{r.startDate||"-"}</td>
+                    <td className="nowrap">{r.endDate||"-"}</td>
+                    <td className="nowrap">{r.per}</td>
+                    <td className="nowrap">{Number(r.rate||0).toLocaleString("tr-TR",{style:"currency",currency:CURRENCY,maximumFractionDigits:0})}</td>
+                    <td className="nowrap">{kmDiff}</td>
+                    <td className="nowrap" title={r.invoice?"Fatura yüklü":"Fatura yok"}>
+                      {r.invoice?"✅":"❌"}{" "}
+                      <label className="btn">Ekle
+                        <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                               onChange={(e)=>e.target.files[0] && addInvoice(r.id, e.target.files[0])}/>
+                      </label>
+                      {r.invoice && <>
+                        <button className="btn" onClick={()=>previewDoc(r.invoice)}>Gör</button>
+                        <button className="btn danger" onClick={()=>clearRentalFile(r.id,"invoice")}>Kaldır</button>
+                      </>}
+                    </td>
+                    <td className="nowrap" title={r.contract?"Sözleşme yüklü":"Sözleşme yok"}>
+                      {r.contract?"✅":"❌"}{" "}
+                      <label className="btn">Ekle
+                        <input type="file" accept="application/pdf,image/*" style={{ display:"none" }}
+                               onChange={(e)=>e.target.files[0] && addContract(r.id, e.target.files[0])}/>
+                      </label>
+                      {r.contract && <>
+                        <button className="btn" onClick={()=>previewDoc(r.contract)}>Gör</button>
+                        <button className="btn danger" onClick={()=>clearRentalFile(r.id,"contract")}>Kaldır</button>
+                      </>}
+                    </td>
+                    <td className="nowrap">
+                      <button className="btn" onClick={()=>editRental(r.id, { customer: prompt("Müşteri", r.customer) ?? r.customer })}>Düzenle</button>
+                      <button className="btn danger" onClick={()=>removeRental(r.id)}>Sil</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ===== Rezervasyonlar ===== */}
+      {tab==="rezervasyonlar" && (
+        <div className="card">
+          <div className="row" style={{ justifyContent:"space-between" }}>
+            <h3 style={{ margin:0 }}>Rezervasyonlar</h3>
+            <button className="btn ok" onClick={openResNew}>➕ Rezervasyon Ekle</button>
+          </div>
+          <table className="tight">
+            <thead>
+              <tr>
+                <th className="nowrap">Plaka</th><th className="nowrap">Müşteri</th>
+                <th className="nowrap">Başlangıç</th><th className="nowrap">Bitiş</th>
+                <th className="nowrap">Teslim Yeri</th><th className="nowrap">İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservations.length===0 ? (
+                <tr><td colSpan={6} style={{ textAlign:"center", color:THEME.muted }}>Kayıt yok.</td></tr>
+              ) : reservations.map(z=>(
+                <tr key={z.id} className="mini">
+                  <td className="nowrap">{z.plate}</td><td className="nowrap">{z.customer}</td>
+                  <td className="nowrap">{z.from}</td><td className="nowrap">{z.to}</td>
+                  <td className="nowrap">{z.place||"-"}</td>
+                  <td className="nowrap">
+                    <button className="btn" onClick={()=>editRes(z)}>Düzenle</button>
+                    <button className="btn danger" onClick={()=>removeRes(z.id)}>Sil</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {resDraft && (
+            <form onSubmit={saveRes} className="card" style={{ marginTop: 10 }}>
+              <div className="row">
+                <select value={resDraft.plate} onChange={e=>setResDraft({...resDraft, plate:e.target.value})}>
+                  <option value="">Plaka seç</option>
+                  {vehicles.map(v=> <option key={v.plate} value={v.plate}>{v.plate}</option>)}
+                </select>
+                <input placeholder="Müşteri" value={resDraft.customer} onChange={e=>setResDraft({...resDraft, customer:e.target.value})}/>
+                <input type="date" value={resDraft.from} onChange={e=>setResDraft({...resDraft, from:e.target.value})}/>
+                <input type="date" value={resDraft.to} onChange={e=>setResDraft({...resDraft, to:e.target.value})}/>
+                <input placeholder="Teslim Yeri" value={resDraft.place||""} onChange={e=>setResDraft({...resDraft, place:e.target.value})}/>
+                <button className="btn ok" type="submit">{resDraft.id?"Güncelle":"Kaydet"}</button>
+                <button className="btn" type="button" onClick={()=>setResDraft(null)}>İptal</button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* ===== Bakım ===== */}
+      {tab==="bakim" && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Bakım & Notlar</h3>
+          <form onSubmit={addMaint} className="row" style={{ marginBottom: 8 }}>
+            <select value={maintDraft.plate} onChange={e=>setMaintDraft({...maintDraft, plate:e.target.value})}>
+              <option value="">Plaka seç</option>
+              {vehicles.map(v=> <option key={v.plate} value={v.plate}>{v.plate}</option>)}
+            </select>
+            <input type="date" value={maintDraft.date} onChange={e=>setMaintDraft({...maintDraft, date:e.target.value})}/>
+            <input type="number" placeholder="KM" value={maintDraft.km} onChange={e=>setMaintDraft({...maintDraft, km:e.target.value})}/>
+            <input placeholder="Not" value={maintDraft.note} onChange={e=>setMaintDraft({...maintDraft, note:e.target.value})}/>
+            <button className="btn ok" type="submit">Ekle</button>
+          </form>
+          <table className="tight">
+            <thead><tr><th className="nowrap">Plaka</th><th className="nowrap">Tarih</th><th className="nowrap">KM</th><th className="nowrap">Not</th><th className="nowrap">İşlem</th></tr></thead>
+            <tbody>
+              {maintenance.length===0 ? (
+                <tr><td colSpan={5} style={{ textAlign:"center", color:THEME.muted }}>Kayıt yok.</td></tr>
+              ) : maintenance.map(m=>(
+                <tr key={m.id} className="mini">
+                  <td className="nowrap">{m.plate}</td><td className="nowrap">{m.date}</td><td className="nowrap">{m.km}</td><td className="nowrap">{m.note||"-"}</td>
+                  <td className="nowrap"><button className="btn danger" onClick={()=>removeMaint(m.id)}>Sil</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ===== Takvim ===== */}
+      {tab==="takvim" && (
+        <div className="card">
+          <div className="row" style={{ justifyContent:"space-between" }}>
+            <div className="legend row">
+              <div className="chip"><span className="dot" style={{ background:DAY_COLORS.res }}/><span>Rezervasyon</span></div>
+              <div className="chip"><span className="dot" style={{ background:DAY_COLORS.maint }}/><span>Bakım</span></div>
+              <div className="chip"><span className="dot" style={{ background:DAY_COLORS.ins }}/><span>Sigorta</span></div>
+              <div className="chip"><span className="dot" style={{ background:DAY_COLORS.insp }}/><span>Muayene</span></div>
+            </div>
+            <div className="row">
+              <button className="btn" onClick={()=>shiftMonth(-1)}>◀︎</button>
+              <select value={calMonth} onChange={e=>setCalMonth(Number(e.target.value))}>
+                {["Ocak","Şubat","Mart","Nisan","Mayıs","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"].map((m,i)=><option key={i} value={i}>{m}</option>)}
+              </select>
+              <select value={calYear} onChange={e=>setCalYear(Number(e.target.value))}>
+                {Array.from({length:7},(_,i)=> new Date().getFullYear()-3+i).map(y=><option key={y} value={y}>{y}</option>)}
+              </select>
+              <button className="btn" onClick={()=>{const d=new Date(); setCalYear(d.getFullYear()); setCalMonth(d.getMonth());}}>Bugün</button>
+              <button className="btn" onClick={()=>shiftMonth(1)}>▶︎</button>
+            </div>
+          </div>
+
+          <div className="grid-7" style={{ marginTop: 8 }}>
+            {calDays.map((d,i)=>{
+              const iso = dateISO(d);
+              const ev = dayEvents(iso);
+              return (
+                <div key={i} className="cell" title={ev.map(e=>e.label).join("\n")}>
+                  <div style={{ fontWeight:700, marginBottom:6 }}>{d.getDate()}</div>
+                  {ev.map((e,idx)=>(
+                    <div key={idx} className="evt">
+                      <span className="dot" style={{ background:DAY_COLORS[e.type] }}/>
+                      <span className="nowrap" title={e.label}>{e.plate}</span>
+                    </div>
+                  ))}
+                  {/* Hover baloncuğu */}
+                  {ev.length>0 && (
+                    <div className="tooltip">{ev.map((e,ii)=> <div key={ii}>{e.label}</div>)}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ===== Hatırlatmalar (KPI burada) ===== */}
+      {tab==="hatirlatmalar" && (
+        <div className="card">
+          <div className="row" style={{ marginBottom:8 }}>
+            <div className="kpi">📦 Toplam: <b>{stats.total}</b></div>
+            <div className="kpi">🔴 Kirada: <b>{stats.rented}</b></div>
+            <div className="kpi">🟢 Müsait: <b>{stats.free}</b></div>
+            <div className="kpi">📄 Açık Söz.: <b>{stats.openContracts}</b></div>
+          </div>
+
+          <div className="legend row" style={{ marginBottom: 6 }}>
+            <div className="chip"><span className="dot" style={{ background:"#60a5fa" }}/><span>Bilgi (&gt;30g / &gt;1000km)</span></div>
+            <div className="chip"><span className="dot" style={{ background:"#fbbf24" }}/><span>Yakın (≤30g / ≤1000km)</span></div>
+            <div className="chip"><span className="dot" style={{ background:"#ef4444" }}/><span>Kritik (≤7g / geçmiş)</span></div>
+          </div>
+
+          {reminders.length===0 ? (
+            <div style={{ color:THEME.muted }}>Yaklaşan yok.</div>
+          ) : (
+            <ul style={{ margin:0, paddingLeft:18 }}>
+              {reminders.map((r,i)=>{
+                const dl = daysLeft(r.date);
+                const c = dl<=7 ? "#ef4444" : dl<=30 ? "#fbbf24" : "#60a5fa";
+                return <li key={i}><span className="dot" style={{ background:c }}/>{" "}<b>{r.plate}</b> – {r.type}: {fmtTR(r.date)}</li>;
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* ===== Ayarlar ===== */}
+      {tab==="ayarlar" && (
+        <div className="card">
+          <h3 style={{ marginTop:0 }}>Ayarlar</h3>
+          <div className="row">
+            <input placeholder="Firma Adı" value={settings.companyName} onChange={e=>setSettings({...settings, companyName:e.target.value})}/>
+            <input placeholder="IBAN" value={settings.iban} onChange={e=>setSettings({...settings, iban:e.target.value})}/>
+            <select value={settings.theme} onChange={e=>setSettings({...settings, theme:e.target.value})}>
+              {Object.keys(BASE).map(k=><option key={k} value={k}>{k}</option>)}
+              <option value="glass">glass (koyu)</option>
+              <option value="glass-alt">glass-alt</option>
+              <option value="glass-neo">glass-neo</option>
+            </select>
+            {settings.theme.startsWith("glass") && (
+              <>
+                <span className="nowrap">NeoGlass Renk:</span>
+                <select value={settings.glassAccent} onChange={e=>setSettings({...settings, glassAccent:e.target.value})}>
+                  {Object.keys(GLASS_ACCENTS).map(k=> <option key={k} value={k}>{k}</option>)}
+                </select>
+              </>
+            )}
+            <label className="btn">Logo Yükle
+              <input type="file" accept="image/*" style={{ display:"none" }} onChange={async(e)=>{
+                const f = e.target.files?.[0]; if(!f) return;
+                const url = await toDataURL(f); setSettings(s=>({ ...s, logo:url }));
+              }}/>
+            </label>
+            {settings.logo && <button className="btn danger" onClick={()=>setSettings(s=>({...s, logo:""}))}>Logoyu Kaldır</button>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
