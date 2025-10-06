@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Mileage Parsing Fix</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+        .result { font-weight: bold; }
+        .pass { color: green; }
+        .fail { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Mileage Parsing Bug Verification</h1>
+
+    <div class="test-section">
+        <h2>Test Case 1: Original Buggy Logic (Failing)</h2>
+        <p>This test demonstrates the original buggy logic from <code>index.tsx</code>. It fails because <code>.replace(/,/, '')</code> only removes the first comma.</p>
+        <script>
+            const testValue1 = "1,234,567";
+            const expectedValue1 = "1234567";
+            const actualValue1 = testValue1.replace(/,/, ''); // The buggy logic
+            const passed1 = actualValue1 === expectedValue1;
+            document.write(`<p>Test Value: <strong>${testValue1}</strong></p>`);
+            document.write(`<p>Expected Value: <strong>${expectedValue1}</strong></p>`);
+            document.write(`<p>Actual Value (Buggy): <strong>${actualValue1}</strong></p>`);
+            document.write(`<p>Result: <span class="result ${passed1 ? 'pass' : 'fail'}">${passed1 ? "PASS" : "FAIL"}</span></p>`);
+        </script>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Case 2: Corrected Logic (Passing)</h2>
+        <p>This test demonstrates the new, robust logic. It passes because <code>.replace(/[^0-9]/g, '')</code> removes all non-numeric characters.</p>
+        <script>
+            const testValue2 = "1,234,567";
+            const expectedValue2 = "1234567";
+            const actualValue2 = testValue2.replace(/[^0-9]/g, ''); // The corrected logic
+            const passed2 = actualValue2 === expectedValue2;
+            document.write(`<p>Test Value: <strong>${testValue2}</strong></p>`);
+            document.write(`<p>Expected Value: <strong>${expectedValue2}</strong></p>`);
+            document.write(`<p>Actual Value (Corrected): <strong>${actualValue2}</strong></p>`);
+            document.write(`<p>Result: <span class="result ${passed2 ? 'pass' : 'fail'}">${passed2 ? "PASS" : "FAIL"}</span></p>`);
+        </script>
+    </div>
+
+</body>
+</html>

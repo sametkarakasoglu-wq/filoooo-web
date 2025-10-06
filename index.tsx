@@ -1158,7 +1158,7 @@ const VehicleModal = () => {
                     </div>
                     <div class="form-group">
                         <label for="km">Kilometre</label>
-                        <input type="number" id="km" name="km" placeholder="Örn: 85000" value="${vehicle?.km.replace(/,/, '') || ''}" required>
+                        <input type="number" id="km" name="km" placeholder="Örn: 85000" value="${vehicle?.km.replace(/[^0-9]/g, '') || ''}" required>
                     </div>
                 </div>
                 <div class="form-row">
