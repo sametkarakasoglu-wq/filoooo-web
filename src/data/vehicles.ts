@@ -1,0 +1,9 @@
+import type { Vehicle } from '../types';
+
+export let vehiclesData: Vehicle[] = [
+    { plate: '34 ABC 123', brand: 'Ford Focus', km: '120,500', status: 'Müsait', insuranceDate: '2025-10-15', inspectionDate: '2025-08-01', insuranceFile: 'sigorta.pdf', inspectionFile: 'muayene.pdf', licenseFile: 'ruhsat.jpg', insuranceFileUrl: null, inspectionFileUrl: null, licenseFileUrl: null },
+    { plate: '06 XYZ 789', brand: 'Renault Clio', km: '85,200', status: 'Kirada', insuranceDate: '2024-12-20', inspectionDate: '2025-01-10', insuranceFile: 'sigorta.pdf', inspectionFile: null, licenseFile: 'ruhsat.jpg', rentedBy: { name: 'Mehmet Öztürk', phone: '0544 567 89 01'}, insuranceFileUrl: null, inspectionFileUrl: null, licenseFileUrl: null, activeRentalId: 1 },
+    { plate: '35 DEF 456', brand: 'Fiat Egea', km: '45,000', status: 'Bakımda', insuranceDate: '2025-05-01', inspectionDate: '2024-11-22', insuranceFile: null, inspectionFile: 'muayene.pdf', licenseFile: 'ruhsat.jpg', insuranceFileUrl: null, inspectionFileUrl: null, licenseFileUrl: null },
+    { plate: '16 GHI 789', brand: 'Volkswagen Passat', km: '180,000', status: 'Müsait', insuranceDate: '2025-02-28', inspectionDate: '2025-03-15', insuranceFile: 'sigorta.pdf', inspectionFile: 'muayene.pdf', licenseFile: null, insuranceFileUrl: null, inspectionFileUrl: null, licenseFileUrl: null },
+    { plate: '41 JKL 123', brand: 'Hyundai i20', km: '62,300', status: 'Kirada', insuranceDate: '2024-09-05', inspectionDate: '2025-09-05', insuranceFile: 'sigorta.pdf', inspectionFile: 'muayene.pdf', licenseFile: 'ruhsat.jpg', rentedBy: { name: 'Ayşe Kaya', phone: '0533 987 65 43' }, insuranceFileUrl: null, inspectionFileUrl: null, licenseFileUrl: null, activeRentalId: 2 },
+];
