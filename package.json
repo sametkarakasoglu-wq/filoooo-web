@@ -8,8 +8,19 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.9.0",
+    "lodash.throttle": "^4.1.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-redux": "^9.2.0",
+    "zod": "^4.1.11"
   }
 }
